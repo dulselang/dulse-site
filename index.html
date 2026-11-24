@@ -195,7 +195,7 @@ task fn control() every 1ms deadline 100us on TIM6 {
     ...
 }
 <span class="c">// dulsec time .   -->  control: period 1 ms (PSC 89, ARR 999 at 180 MHz), response 3.2 µs, PASS</span></div>
-        <p style="margin-top:12px">The flash is the one people forget. On an STM32F4 a sector erase stalls every fetch from that bank for up to 2 s, so a settings save in <code>main</code> is a 2 s masked section as far as every handler in flash is concerned. The inverted pendulum port steps every 25 µs. The build refuses the image and names the fix.</p>
+        <p style="margin-top:12px">Trying to use a flash for storage during real-time operation is one example of a small change with major timing implications. On an STM32F4 a sector erase stalls every fetch from that bank for up to 2 s, so a settings save in <code>main</code> is a 2 s masked section as far as every handler in flash is concerned. The inverted pendulum port steps every 25 µs. The build refuses the image and names the fix.</p>
         <p>One line does the same over a C image: <code>[deadlines.TIM2_IRQHandler] period = true</code> in an annotation file, and the erase inside a library, C or Dulse, gets the error with its file and line.</p>
       </div>
       <div style="display:grid;gap:12px">
@@ -230,7 +230,6 @@ task fn control() every 1ms deadline 100us on TIM6 {
         </div>
       </div>
     </div>
-    <p class="copy">Fine print: cycle tables exist for a handful of boards only (F303, F429, F401, the Tab5's RISC-V core), so a verdict elsewhere is <code>tested</code> rather than <code>proved</code>. No deadline miss has been caught on code we didn't write and confirmed on silicon; the pendulum and the RC loop are ours.</p>
   </div>
 </section>
 
