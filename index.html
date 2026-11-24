@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dulse: embedded tools grounded in what the chip actually does</title>
+<meta name="description" content="Dulse is a series of open-source tools to help make embedded development reliable. It builds hardware contracts from vendor documentation, hardware tests, and errata to catch common hardware errors before you flash them to a chip.">
+<meta name="referrer" content="no-referrer">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Same palette and type as index.html (2026-10-02 mockup). */
+:root{
+  --bg:#f2f3f5; --surface:#ffffff; --fg:#15171a; --fg-2:#4b5058; --muted:#767c85; --line:#dcdfe4;
+  --accent:#7a2634; --accent-ink:#ffffff; --accent-soft:rgba(122,38,52,.08);
+  --term-bg:#15171c; --term-fg:#d8dbe0; --term-dim:#8b919b; --term-line:#2b2f37; --term-hi:rgba(255,255,255,.07);
+  --crit:#d03b3b; --warn:#fab219; --good:#0ca30c; --good-text:#006300;
+  --note-bg:#fff6d6; --note-line:#e3c35a; --note-fg:#4e3d00;
+  --board:#1f6f8b;
+  --font-sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1114; --surface:#171a1f; --fg:#e7e8e6; --fg-2:#b5b9bf; --muted:#8a9099; --line:#2a2e35;
+    --accent:#e68c9b; --accent-ink:#1b0d10; --accent-soft:rgba(230,140,155,.12);
+    --term-bg:#0b0d10; --term-line:#23272e; --good-text:#0ca30c;
+    --note-bg:#2a2410; --note-line:#6e5b1c; --note-fg:#f1dd8f; --board:#6fc3dd;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1114; --surface:#171a1f; --fg:#e7e8e6; --fg-2:#b5b9bf; --muted:#8a9099; --line:#2a2e35;
+  --accent:#e68c9b; --accent-ink:#1b0d10; --accent-soft:rgba(230,140,155,.12);
+  --term-bg:#0b0d10; --term-line:#23272e; --good-text:#0ca30c;
+  --note-bg:#2a2410; --note-line:#6e5b1c; --note-fg:#f1dd8f; --board:#6fc3dd;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size:17px;line-height:1.55;margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:0 60px}
+a{color:var(--accent)}
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-size:clamp(1.9rem,4.2vw,2.8rem);font-weight:600;line-height:1.1;letter-spacing:-.015em;max-width:24ch}
+h2{font-size:clamp(1.4rem,2.6vw,1.8rem);font-weight:600;line-height:1.2;max-width:32ch}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0}
+.lead{font-size:1.1rem;color:var(--fg-2);max-width:60ch}
+.copy{max-width:64ch;color:var(--fg-2)}
+.copy p + p{margin-top:12px}
+.eyebrow{font-family:var(--font-mono);font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:500}
+code{font-family:var(--font-mono);font-size:.92em}
+.copy code,.tile code,.card code,.fine code{background:var(--accent-soft);padding:1px 5px;border-radius:4px;color:var(--fg)}
+section{padding-block:48px;border-top:1px solid var(--line)}
+section > .stack{display:grid;gap:20px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:6px;font-weight:500;text-decoration:none;font-size:.98rem;border:1px solid transparent;cursor:pointer;font-family:var(--font-sans)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{border-color:var(--line);color:var(--fg);background:var(--surface)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.top{display:flex;justify-content:space-between;align-items:center;padding-block:18px;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--fg);font-family:var(--font-mono);font-weight:600;font-size:1.1rem}
+.nav{display:flex;gap:18px;flex-wrap:wrap;font-size:.95rem}
+.nav a{color:var(--fg-2);text-decoration:none}
+.mock{font-family:var(--font-mono);font-size:.78rem;color:var(--note-fg);background:var(--note-bg);border:1px solid var(--note-line);padding:6px 10px;border-radius:5px;margin-top:14px}
+/* hero */
+.hero{padding-block:48px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:32px;align-items:start}
+.hero .left{display:grid;gap:18px}
+/* terminal */
+.term{background:var(--term-bg);color:var(--term-fg);border-radius:8px;overflow:hidden;font-family:var(--font-mono);font-size:12.5px;line-height:1.5;min-width:0}
+.term-bar{display:flex;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--term-line);color:var(--term-dim);flex-wrap:wrap}
+.term-bar .cmd{color:var(--term-fg)}
+.term-bar .cmd::before{content:"$ ";color:var(--term-dim)}
+.term-bar .spacer{flex:1}
+.term pre{margin:0;padding:12px 16px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;tab-size:4}
+.term .k{color:var(--term-dim)}
+.sev-err{color:var(--crit);font-weight:600}
+.sev-ok{color:var(--good);font-weight:600}
+.term .cov{color:var(--term-dim)}
+.board{border-left:3px solid var(--board);padding:10px 14px;color:var(--fg-2);font-size:.95rem;background:var(--surface);border-radius:0 6px 6px 0}
+.board b{color:var(--board);font-weight:600}
+/* strip */
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:8px;align-content:start;min-width:0}
+.card .n{font-family:var(--font-mono);font-size:1.5rem;font-weight:600;line-height:1.1;color:var(--fg)}
+.card p{color:var(--fg-2);font-size:.92rem}
+.card a{font-size:.82rem;font-family:var(--font-mono)}
+/* time block */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:28px;align-items:start}
+.timeline{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 18px 10px;display:grid;gap:6px}
+.timeline svg{width:100%;height:auto;display:block}
+.timeline .cap{font-size:.85rem;color:var(--muted);font-family:var(--font-mono)}
+.dul{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-family:var(--font-mono);font-size:13px;white-space:pre;overflow-x:auto;color:var(--fg)}
+.dul .c{color:var(--muted)}
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;display:grid;gap:10px;align-content:start;min-width:0}
+.tile .claim{color:var(--fg);font-size:.98rem}
+.tile .res,.tile .gap{font-size:.9rem;color:var(--fg-2);padding-left:12px;border-left:3px solid var(--good)}
+.tile .gap{border-left-color:var(--warn)}
+.tile .lab{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
+.tile.plan{border-style:dashed}
+/* fine print */
+.fine{max-width:70ch;color:var(--fg-2);display:grid;gap:10px}
+.fine li{margin-bottom:6px}
+.never{font-family:var(--font-mono);font-size:.85rem;color:var(--muted)}
+/* evidence */
+.ev{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.ev .card .n{font-size:1.35rem}
+/* stands */
+table{border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums;width:100%}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--fg-2);font-weight:500}
+td:first-child{font-family:var(--font-mono);font-size:.85rem;white-space:nowrap}
+.card .src{font-size:.82rem;font-family:var(--font-mono);color:var(--muted)}
+/* signup */
+.signup{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:22px 24px;display:grid;gap:14px;max-width:640px}
+.signup form{display:flex;gap:10px;flex-wrap:wrap}
+.signup input[type=email]{flex:1 1 240px;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:6px;font:inherit;background:var(--bg);color:var(--fg)}
+.signup input[type=email]:focus-visible,.btn:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.signup .small{font-size:.88rem;color:var(--muted)}
+.foot{padding-block:28px;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem;display:grid;gap:8px}
+.foot code{color:var(--fg-2)}
+@media (max-width:900px){
+  .hero,.two{grid-template-columns:1fr}
+  .strip,.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ev{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .strip,.tiles,.ev{grid-template-columns:1fr}
+  body{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <a class="brand" href="#">dulse</a>
+  <nav class="nav">
+    <a href="#check">Check</a><a href="#time">Time</a><a href="#arms">Arms</a><a href="#misses">What it misses</a>
+    <a href="#sidechannel">Side channels</a><a href="https://dyno.dulse.dev">Agent benchmark</a><a href="#signup">Get the email</a>
+  </nav>
+</header>
+
+<!-- 1. hero -->
+<div class="hero" id="check">
+  <div class="left">
+    <h1>Embedded tools grounded in what the chip actually does.</h1>
+    <p class="lead">Dulse is a series of open-source tools to help make embedded development reliable, even when using questionable code coming from LLMs. Dulse builds hardware contracts from vendor documentation, hardware tests, and errata to catch common hardware errors before you ever flash them to a chip.</p>
+    <div class="row">
+      <a class="btn primary" href="#signup">Email me when the repos open</a>
+      <a class="btn ghost" href="https://dyno.dulse.dev">The agent benchmark (dyno)</a>
+    </div>
+    <p class="copy">ST's own STM32CubeL5 example, built unmodified, no source given to the tool. One confirmed error of the eight it reports; the other seven are leads on paths the walk couldn't rule out.</p>
+  </div>
+  <div>
+    <div class="term">
+      <div class="term-bar"><span class="cmd">dulsec check TIM_OutputCompare.elf --board stm32l562e-dk</span><span class="spacer"></span><span>1.4 s</span></div>
+<pre><span class="sev-err">error E0710</span>: TIM2.ARR read is not allowed in state `Unclocked` (RM0438 Rev 8 §9.3.19 p.340: the APB1 clock for TIM2 is gated (RCC.APB1ENR1.TIM2EN, reset 0), and 'When the peripheral clock is not active, read or write accesses to the peripheral registers are not supported')
+  <span class="k">--></span> stm32l5xx_ll_tim.h:1797 (main+0x200, pc 0x080005ac)
+  <span class="k">why:</span> protocol TIM2: states Unclocked -> Clocked -> Running; current possible states: Unclocked
+  <span class="k">fix:</span> from `Unclocked`: enable clock via RCC.APB1ENR1.TIM2EN
+<span class="cov">coverage: 26 of 30 functions reached; 7 of 8 peripherals touched have a protocol; 33 of 37 MMIO write sites sequence-checked</span>
+<span class="sev-err">8 error(s)</span>, 1 warning(s)</pre>
+    </div>
+    <div class="board" style="margin-top:10px"><b>On the board:</b> <code>TIM2_ARR</code> reads 0 while unclocked, so <code>TIM3_CCR2</code> ends up 0 instead of the 499 the comment promises and the output is half a period off. Nothing faults. The LED still blinks. (main.c:152 sets TIM3's compare from <code>LL_TIM_GetAutoReload(TIM2)</code>, a typo that shipped.)</div>
+  </div>
+</div>
+
+<!-- 2. silicon strip -->
+<section>
+  <div class="stack">
+    <p class="eyebrow">The contract is checked against the chip, not the PDF</p>
+    <div class="strip">
+      <div class="card"><div class="n">8 of 15</div><p>probed reset values in ST's own SVD are wrong on the STM32F303RE. Read off the chip, held in the model.</p><span class="src">results/f303-conformance</span></div>
+      <div class="card"><div class="n">1000 / 1000</div><p>duplicate TIM2 interrupts when <code>UIF</code> is cleared last and a <code>DSB</code> is the 'fix', at APB1 /4. A DSB is not a completion barrier on a divided APB: seen since on the L152, F429, F746, WL55, U585, L562 and SAM G55. A read-back of the same peripheral always works.</p><span class="src">errata-sweep G1102</span></div>
+      <div class="card"><div class="n">5 WS flat, 16 WS not</div><p><code>udiv</code> on the F429 is constant-time at 5 wait states and operand-dependent at 16, 18 and 25 with the I-cache on. No document says so.</p><span class="src">results/ct G447</span></div>
+      <div class="card"><div class="n">13 of 13, then 0</div><p>ST's unmodified LwIP HTTP server example on the F429 receives at 100 Mbit on 13 of 13 boots and never at 10 Mbit. <code>HAL_ETH_Start_IT</code> applies the ES0206 §2.16.6 workaround to the TE write but not to RE. <code>MACCR</code> still reads RE=1 and nothing reports an error.</p><span class="src">cube-build F429-ETH-10MBIT</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. a contract with time in it -->
+<section id="time">
+  <div class="stack">
+    <p class="eyebrow">A contract with time in it</p>
+    <h2>The control loop's deadline is a term the compiler holds, not a comment.</h2>
+    <div class="two">
+      <div class="copy">
+        <p>A task says how often it runs and how late it may be. The period isn't trusted from the source: it's derived from the timer's PSC and ARR writes, the APB prescaler and the clock tree the program set up, and a mismatch is an error. The response time is the task plus everything that can delay it: the longest interrupts-off span, every more urgent handler once per period, and the flash.</p>
+<div class="dul" style="margin-top:12px"><span class="c">// pwm-rc-loop/src/main.dul (NUCLEO-F429ZI, PI loop on an RC circuit)</span>
+task fn control() every 1ms deadline 100us on TIM6 {
+    ...
+}
+<span class="c">// dulsec time .   -->  control: period 1 ms (PSC 89, ARR 999 at 180 MHz), response 3.2 µs, PASS</span></div>
+        <p style="margin-top:12px">The flash is the one people forget. On an STM32F4 a sector erase stalls every fetch from that bank for up to 2 s, so a settings save in <code>main</code> is a 2 s masked section as far as every handler in flash is concerned. The inverted pendulum port steps every 25 µs. The build refuses the image and names the fix.</p>
+        <p>One line does the same over a C image: <code>[deadlines.TIM2_IRQHandler] period = true</code> in an annotation file, and the erase inside a library, C or Dulse, gets the error with its file and line.</p>
+      </div>
+      <div style="display:grid;gap:12px">
+        <div class="term">
+          <div class="term-bar"><span class="cmd">dulsec build .</span><span class="spacer"></span><span>pendulum port, F429</span></div>
+<pre><span class="sev-err">error E1210</span>: deadline of `step` not met: the erase of sector 7 (128 KB, PSIZE x32) in `params::save` (src/params.dul:351:5, from `main`) stalls every flash fetch for up to 2 s, against 25 µs; met when `step` and what it calls run from RAM (`[mpu] exec_ram`: 41 functions, 5212 bytes; no check is weakened), or when the erase can't run while control::MODE is outside {Idle, Fault} (the modes requirement C.STEP gives this deadline)</pre>
+        </div>
+        <div class="timeline">
+          <svg viewBox="0 0 640 130" role="img" aria-label="log scale from 10 microseconds to 10 seconds with the step period, a word program, the measured erase gap and the printed maximum erase">
+            <g font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--muted)">
+              <line x1="30" y1="70" x2="610" y2="70" stroke="var(--line)" stroke-width="2"/>
+              <g stroke="var(--line)">
+                <line x1="30" y1="66" x2="30" y2="74"/><line x1="113" y1="66" x2="113" y2="74"/><line x1="196" y1="66" x2="196" y2="74"/>
+                <line x1="279" y1="66" x2="279" y2="74"/><line x1="362" y1="66" x2="362" y2="74"/><line x1="445" y1="66" x2="445" y2="74"/>
+                <line x1="528" y1="66" x2="528" y2="74"/><line x1="610" y1="66" x2="610" y2="74"/>
+              </g>
+              <text x="30" y="96" text-anchor="middle">10 µs</text><text x="113" y="96" text-anchor="middle">100 µs</text>
+              <text x="196" y="96" text-anchor="middle">1 ms</text><text x="279" y="96" text-anchor="middle">10 ms</text>
+              <text x="362" y="96" text-anchor="middle">100 ms</text><text x="445" y="96" text-anchor="middle">1 s</text>
+              <text x="528" y="96" text-anchor="middle">10 s</text>
+            </g>
+            <!-- 25 us: log10(2.5)=0.398 -> 30+0.398*83=63 -->
+            <g><line x1="63" y1="30" x2="63" y2="70" stroke="var(--good)" stroke-width="3"/><text x="63" y="20" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--fg)">step every 25 µs</text></g>
+            <!-- 100 us word program -->
+            <g><line x1="113" y1="46" x2="113" y2="70" stroke="var(--warn)" stroke-width="3"/><text x="140" y="42" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--fg)">word program 100 µs</text></g>
+            <!-- 204 ms: log10(20.4)=1.31 -> 362+0.31*83=388 -->
+            <g><line x1="388" y1="30" x2="388" y2="70" stroke="var(--crit)" stroke-width="3"/><text x="388" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--fg)">erase, measured 204 ms</text></g>
+            <!-- 2 s: log10(2)=0.301 -> 445+0.301*83=470 -->
+            <g><line x1="470" y1="46" x2="470" y2="70" stroke="var(--crit)" stroke-width="3" stroke-dasharray="3 2"/><text x="500" y="42" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--fg)">printed max 2 s</text></g>
+          </svg>
+          <p class="cap">F4 flash: the deadline is held against the printed maximum; the bench measured 204 ms on an F401. A handler in RAM with the erase loop still in flash was blocked just the same, which made the rule stricter.</p>
+        </div>
+      </div>
+    </div>
+    <p class="copy">Fine print: cycle tables are calibrated on the F303 and F429 and nowhere else yet, so a verdict elsewhere is <code>tested</code> rather than <code>proved</code>. No deadline miss has been caught on code we didn't write and confirmed on silicon; the pendulum and the RC loop are ours.</p>
+  </div>
+</section>
+
+<!-- 4. arms -->
+<section id="arms">
+  <div class="stack">
+    <p class="eyebrow">The arms</p>
+    <h2>One checker, several things to point it at.</h2>
+    <div class="tiles">
+      <div class="tile">
+        <h3>Check</h3>
+        <p class="claim">Any Cortex-M ELF, any toolchain. Reads and reports, alters nothing.</p>
+        <p class="res"><span class="lab">found</span>The CubeL5 typo above. Microchip's HAL read-modify-writing the write-only <code>SUPC_CR</code>, core-off bit included. The SAMD21 <code>XOSC32K.AAMPEN</code> erratum in nine Zephyr board files. Four in ChibiOS master's HALs, e.g., the G4 'boost' option writes the bit that turns boost off, so the part runs 170 MHz in the 150 MHz mode (read back on a NUCLEO-G474RE). None filed upstream yet.</p>
+        <p class="gap"><span class="lab">gap</span>Precision on vendor code is 0.06 to 0.16 per site held out; recall on historical bugs 1 to 3 in 46. See 'what it misses'.</p>
+      </div>
+      <div class="tile">
+        <h3>Contracts</h3>
+        <p class="claim">Per-chip models from the SVD, the manual and the errata sheet, corrected on silicon. The rule is the stricter of the errata sheet and the board.</p>
+        <p class="res"><span class="lab">have</span>Over 2,000 recorded gaps and 163 errata-vs-silicon entries. ST, Microchip, Nordic, Espressif. <code>dulsec hw path USART2 Unclocked Enabled</code> prints the sequence with citations.</p>
+        <p class="gap"><span class="lab">gap</span>The best-covered part is 78 % complete; the rest were built demo-first.</p>
+      </div>
+      <div class="tile">
+        <h3>Secrets &amp; constant time</h3>
+        <p class="claim">A C project links a library written in Dulse. The compiler guarantees no branch or address depends on the secret, zeroes what it touched, and refuses a secret in a memory configuration nothing measured. <code>verify</code> proves the shipped bytes are the checked bytes. For C you already have, <code>check image.elf --secret KEY</code> follows a symbol you mark through the binary.</p>
+        <p class="res"><span class="lab">measured</span>AES-128 matches FIPS-197 on the board, 203 obligations. Flat in every memory configuration on F429, F401, L152, F746. <code>--set CTL_BRANCH=1</code> gives E0901. Over a C ELF: mbedTLS's table AES with the key marked gives 70 secret-indexed lookups, and the Dulse AES comes out clean.</p>
+        <p class="gap"><span class="lab">gap</span>A <code>*</code> on a secret emits <code>umull</code> on an M3 and leaks; the per-part instruction table is a design. The walk loses the secret in BearSSL's bitsliced <code>aes_ct</code>, and no finding on a C image has been adjudicated by hand yet. Power and EM out of scope.</p>
+      </div>
+      <div class="tile">
+        <h3>What a change does</h3>
+        <p class="claim">For a PR to a firmware project, the register-level diff of what the board actually runs. 'Nothing hardware-visible' is an answer.</p>
+        <p class="res"><span class="lab">ran</span>81 open PRs over Zephyr, RIOT, TinyUSB, Embassy, NuttX, MicroPython, Tock. RIOT 22413 changes every nRF52's UART baud value inside a PR titled as a new chip.</p>
+        <p class="gap"><span class="lab">gap</span>No regression caught retrospectively yet. In our planted-PR bench a model reading the code was the better reviewer; this shows what the hardware sees, it doesn't review.</p>
+      </div>
+      <div class="tile">
+        <h3>Setup code from the model</h3>
+        <p class="claim">Say the board and the goal. The init sequence comes out of the model with every write carrying its rule, then the checker judges it.</p>
+        <p class="res"><span class="lab">built</span><code>dulsec gen</code>, C and Rust output, in the main tree.</p>
+        <p class="gap"><span class="lab">gap</span>One small agent study so far (L562, Stop 2 wake-up): the Claude models ran it and still handed back HAL code, only the small open model kept the generated code. Drives a part to a state; it doesn't write your driver.</p>
+      </div>
+      <div class="tile">
+        <h3>The language</h3>
+        <p class="claim">The same checker over Dulse source says more, because the compiler owns the instructions: the deadlines above, DMA ownership across handlers, the MPU table from the grants.</p>
+        <p class="res"><span class="lab">bench</span>0 of 7 Dulse images broke the control loop, 11 of 14 C images did. Qwen 27B: 0 of 6 in C, 7 of 8 in Dulse.</p>
+        <p class="gap"><span class="lab">gap</span>2 to 3x the cost per session, every session, and a frontier model didn't need it. Cells of one to five runs on the bench the model was calibrated on. The runs, and the newer rounds, are at <a href="https://dyno.dulse.dev">dyno.dulse.dev</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. what it misses -->
+<section id="misses">
+  <div class="stack">
+    <p class="eyebrow">What it doesn't find</p>
+    <h2>The catch, written down.</h2>
+    <ul class="fine">
+      <li>Precision on vendor code: 0.020 then 0.062 per site on the first held-out corpus, 0.156 on a fresh one where the second fix wave didn't help. What it finds is real; most of what it reports on a big vendor image isn't, yet.</li>
+      <li>Recall: 2 of 34 historical defects, then 3 of 46, one strict. 11 of the 34 misses weren't register-rule bugs at all.</li>
+      <li>Walking a vendor SDK is slow. A Dulse example checks in 0.44 s at the median; the 164 pico-sdk examples took 200 s at the median and half an hour at the worst. What costs is what C is allowed to do (handlers installed at run time, ROM calls, jump tables in <code>.data</code>), not the size of the image.</li>
+      <li>The agent numbers are small and in-sample, and Dulse costs 2-3x per session.</li>
+      <li>A clean result is partly 'not looked at'. The coverage line is on every run for that reason.</li>
+      <li>Every hole closed in the agent rounds was followed by one a level up (the hollow save, a mode of the program's own, a shadow name). The checker proves what's left is safe, not that the feature is there.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6. side channels and faults -->
+<section id="sidechannel">
+  <div class="stack">
+    <p class="eyebrow">Side channels and faults</p>
+    <h2>Timing side channels today. Faults next, fault record first.</h2>
+    <div class="two">
+      <div class="copy">
+        <p>The memory system is a function of the address sequence and the configuration, and no language's semantics mentions either. So a program that is correct by every definition the compiler has still leaks a key, and the countermeasure people reach for when they can't go branchless, two balanced arms, fails from placement alone.</p>
+        <p>ST's X-CUBE-CRYPTOLIB gives up a full AES-128 key at the product default. The RAM section that fixes it ships in the same package, and none of its 2,277 linker scripts maps it. 8-byte alignment closes the channel and is 20-25 % faster. That is a placement property, and only something that owns the emitter and the layout can promise it.</p>
+        <p>Dulse owns both. E0907 refuses a secret computed in a memory configuration no bench capture covers, and E0908 refuses the configuration moving while the secret is live. No branch, address or information flow is involved; a source-level tool can't say it, because the configuration is a register write it never sees.</p>
+      </div>
+      <div style="display:grid;gap:12px">
+        <div class="tile plan">
+          <h3>Faults: the plan, not a claim</h3>
+          <p class="claim">The same shape with the part's own fault record in place of its timing record: the hardened decisions in a shipped image (TF-M FIH, GCC's hardened compares, a Dulse <code>decision</code>) simulated against the faults that part shows on the bench, and a ledger that names the part the claim was qualified on. So when you port, you know what you lost.</p>
+          <p class="gap"><span class="lab">order</span>A fault record for one part first (a ChipWhisperer campaign at a pre-registered grid, skip / fetch-word / load / register classes). Then a three-arm baseline with no Dulse in it. Then the design. Nothing is built.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. signup -->
+<section id="signup">
+  <div class="stack">
+    <p class="eyebrow">Not public yet</p>
+    <h2>Get an email when the repos open.</h2>
+    <div class="signup">
+      <p>The compiler, the chip models, the bench records and the gap ledger are all going up under Apache 2.0, but they aren't public yet. Leave an address and you get one email when they are, and the odd one after that when something worth showing turns up (a new vendor, a batch of errata).</p>
+      <!-- SIGNUP: replace SIGNUP-USERNAME with the Buttondown username before publishing.
+           For another provider change the action and the input's name to what its embed form uses. -->
+      <form action="https://buttondown.com/api/emails/embed-subscribe/SIGNUP-USERNAME" method="post" target="_blank">
+        <label for="bd-email" style="position:absolute;left:-9999px">Email address</label>
+        <input type="email" name="email" id="bd-email" placeholder="you@example.com" autocomplete="email" required>
+        <button class="btn primary" type="submit">Sign up</button>
+      </form>
+      <p class="small">Only used for this list. Unsubscribe link in every email.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>The agent benchmark is already up at <a href="https://dyno.dulse.dev">dyno.dulse.dev</a>. Everything else opens with the repos.</p>
+  <p>Dulse, after the Fundy seaweed that is picked, dried, salted and sold exactly as it is.</p>
+</footer>
+
+</div>
+</body>
+</html>
