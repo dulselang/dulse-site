@@ -151,19 +151,21 @@ td:first-child{font-family:var(--font-mono);font-size:.85rem;white-space:nowrap}
       <a class="btn primary" href="#signup">Sign Up for Updates</a>
       <a class="btn ghost" href="https://dyno.dulse.dev">LLM Model Benchmarks (Dulse-Dyno)</a>
     </div>
-    <p class="copy">ST's own STM32CubeL5 example, built unmodified, no source given to the tool. One confirmed error of the nine it reports; the other eight are leads nobody has confirmed. The example is the NUCLEO-L552ZE-Q one, checked against the L562E-DK board file.</p>
+    <p class="copy">ST's own Class B safety example for the NUCLEO-G474RE (X-CUBE-CLASSB-G4 v4.0.1), built unmodified. All nine errors it reports were judged true by hand: five read back on the board, two read from the source, two true to the letter with no effect seen. One of the three warnings is false.</p>
   </div>
   <div>
     <div class="term">
-      <div class="term-bar"><span class="cmd">dulsec check TIM_OutputCompare.elf --board stm32l562e-dk</span><span class="spacer"></span><span>0.33 s</span></div>
-<pre><span class="sev-err">error E0710</span>: TIM2.ARR read is not allowed in state `Unclocked` (RM0438 Rev 8 §9.3.19 p.340 and §9.8.19 p.377: the APB1 clock for TIM2 is gated (RCC.APB1ENR1.TIM2EN, reset 0), and 'When the peripheral clock is not active, read or write accesses to the peripheral registers are not supported')
-  <span class="k">--></span> stm32l5xx_ll_tim.h:1797 (main+0x200, pc 0x080005ac)
-  <span class="k">why:</span> protocol TIM2: states Unclocked -> Clocked -> Running; current possible states: Unclocked
-  <span class="k">fix:</span> from `Unclocked`: enable clock via RCC.APB1ENR1.TIM2EN
-<span class="cov">coverage: 26 of 30 functions reached; 8 of 8 peripherals touched have a protocol; 37 of 37 MMIO write sites sequence-checked</span>
-<span class="sev-err">9 error(s)</span>, 1 warning(s)</pre>
+      <div class="term-bar"><span class="cmd">dulsec check stl.elf --board nucleo-g474re</span><span class="spacer"></span></div>
+<pre><span class="sev-err">error E1222</span>: after this store the PLL runs at 170 MHz, above its 150 MHz cap in the range in force (RM0440 rev 9 §7.2.8 Table 50 p.280 (Range 1 normal mode: HSI16 16 MHz, HSE 48 MHz, PLL 150 MHz))
+  <span class="k">--></span> stm32g4xx_hal_rcc.c:653 (HAL_RCC_OscConfig+0x51a, pc 0x080030ea)
+   |
+653|         __HAL_RCC_PLL_ENABLE();
+   |
+  <span class="k">fix:</span> raise the range before configuring the PLL this fast, or configure it slower
+<span class="cov">coverage: 128 of 147 functions reached; 10 of 10 peripherals touched have a protocol; 68 of 68 MMIO write sites sequence-checked, 29 store(s) through an address the walk could not resolve</span>
+<span class="sev-err">9 error(s)</span>, 3 warning(s)</pre>
     </div>
-    <div class="board" style="margin-top:10px"><b>On the board:</b> <code>TIM2_ARR</code> reads 0 while unclocked, so <code>TIM3_CCR2</code> ends up 0 instead of the 499 the comment promises and the output is half a period off. Nothing faults. The LED still blinks. (main.c:152 sets TIM3's compare from <code>LL_TIM_GetAutoReload(TIM2)</code>, a typo that shipped.)</div>
+    <div class="board" style="margin-top:10px"><b>On the board:</b> the CPU reads <code>R1MODE</code> = 1 (boost off) and <code>PWREN</code> = 0 with the PLL at 170 MHz. main.c asks for <code>SCALE1</code> where it needs <code>SCALE1_BOOST</code>, after the clock switch and with the PWR clock off, so the call does nothing. The CPU, flash CRC, RAM and clock self-tests all pass anyway. With the fix the error goes and the board reads <code>R1MODE</code> = 0. No failure seen at room temperature; not reported to ST yet.</div>
   </div>
 </div>
 
@@ -174,7 +176,7 @@ td:first-child{font-family:var(--font-mono);font-size:.85rem;white-space:nowrap}
     <div class="strip">
       <div class="card"><div class="n">8 of 15</div><p>probed reset values in ST's own SVD don't match what the STM32F303RE reads. For two of the eight the manual doesn't match either. Read off the chip, held in the model.</p><span class="src">hw/docs/conformance-f303re</span></div>
       <div class="card"><div class="n">1000 / 1000</div><p>duplicate TIM2 interrupts when <code>UIF</code> is cleared last and a <code>DSB</code> is the 'fix', at APB1 /4 on the F429 and F746. A DSB is not a completion barrier on a divided APB: seen since on the L152, WL55, U585, L562, G474, G071 and (598 of 1000) the SAM G55. A read-back of the same peripheral fixes the flag-clear case.</p><span class="src">GAPS G294</span></div>
-      <div class="card"><div class="n">170 MHz in the 150 MHz mode</div><p>ST's Class B safety example for the NUCLEO-G474RE (X-CUBE-CLASSB-G4 v4.0.1), as shipped, runs the part at 170 MHz in Range 1 normal mode, which the manual caps at 150 MHz. Every self-test passes. The checker refuses the unmodified image with E1222, and the CPU read <code>R1MODE</code> = 1 on the board. No failure seen at room temperature; not reported to ST yet.</p><span class="src">results/classb-g4-2026-11</span></div>
+      <div class="card"><div class="n">0, not 499</div><p>ST's CubeL5 <code>TIM_OutputCompare</code> example sets TIM3's compare from <code>LL_TIM_GetAutoReload(TIM2)</code>, a typo that shipped. TIM2 is unclocked and reads 0, so the compare is 0 instead of the 499 the comment promises, and the LED still blinks. The checker gives E0710 on the unmodified image; the other eight errors it reports there are unconfirmed.</p><span class="src">CubeL5 TIM_OutputCompare main.c:152</span></div>
       <div class="card"><div class="n">13 of 13, then 0</div><p>ST's unmodified LwIP HTTP server example on the F429 receives at 100 Mbit on 13 of 13 boots and never at 10 Mbit (3 of 3). <code>HAL_ETH_Start_IT</code> applies the ES0206 §2.16.6 workaround to the TE write but not to RE. <code>MACCR</code> still reads RE=1 and nothing reports an error. Found on the bench and by the simulator; the register checker passes this image.</p><span class="src">cube-build F429-ETH-10MBIT</span></div>
     </div>
   </div>
@@ -241,7 +243,7 @@ task fn control() every 1ms deadline 100us on TIM6 {
       <div class="tile">
         <h3>Check</h3>
         <p class="claim">Any Cortex-M ELF, any toolchain. Reads and reports, alters nothing.</p>
-        <p class="res"><span class="lab">found</span>The CubeL5 typo above. Microchip's HAL read-modify-writing the write-only <code>SUPC_CR</code>, core-off bit included (latent: it reads 0 on both dies tried). The SAMD21 <code>XOSC32K.AAMPEN</code> erratum in a Zephyr SoC file that builds into nine boards, seven of them SAMD21. Four in ChibiOS master's HALs, e.g., the G4 'boost' option writes the bit that turns boost off, so the part runs 170 MHz in the 150 MHz mode (read back on a NUCLEO-G474RE). None filed upstream yet.</p>
+        <p class="res"><span class="lab">found</span>The Class B example and the CubeL5 typo above. Microchip's HAL read-modify-writing the write-only <code>SUPC_CR</code>, core-off bit included (latent: it reads 0 on both dies tried). The SAMD21 <code>XOSC32K.AAMPEN</code> erratum in a Zephyr SoC file that builds into nine boards, seven of them SAMD21. Four in ChibiOS master's HALs, e.g., the G4 'boost' option writes the bit that turns boost off, so the part runs 170 MHz in the 150 MHz mode (read back on a NUCLEO-G474RE). None filed upstream yet.</p>
         <p class="gap"><span class="lab">gap</span>Precision on vendor code is 0.06 to 0.16 per site held out; recall on historical bugs 1 to 3 in 46. See 'what it misses'.</p>
       </div>
       <div class="tile">
