@@ -292,9 +292,8 @@ task fn control() every 1ms deadline 100us on TIM6 {
       </div>
       <div style="display:grid;gap:12px">
         <div class="tile plan">
-          <h3>Faults: the plan, not a claim</h3>
-          <p class="claim">The same shape with the part's own fault record in place of its timing record: the hardened decisions in a shipped image (TF-M FIH, GCC's hardened compares, a Dulse <code>decision</code>) simulated against the faults that part shows on the bench, and a ledger that names the part the claim was qualified on. So when you port, you know what you lost.</p>
-          <p class="gap"><span class="lab">order</span>A fault record for one part first (a ChipWhisperer campaign at a pre-registered grid, skip / fetch-word / load / register classes). Then a three-arm baseline with no Dulse in it. Then the design. Nothing is built.</p>
+          <h3>Fault Injection: Model + Emitter</h3>
+          <p class="claim">Glitching a chip makes it execute code incorrectly, skipping a password check or entering an unauthorized mode. Firmware hardening attempts to build countermeasures like double or hardened checks, but do people update them when changing devices? Glitch effects vary across devices, and Dulse having the device model + code emitter allows it to build effective countermeasures backed by real measurements.</p>
         </div>
       </div>
     </div>
