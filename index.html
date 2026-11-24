@@ -151,7 +151,7 @@ td:first-child{font-family:var(--font-mono);font-size:.85rem;white-space:nowrap}
       <a class="btn primary" href="#signup">Sign Up for Updates</a>
       <a class="btn ghost" href="https://dyno.dulse.dev">LLM Model Benchmarks (Dulse-Dyno)</a>
     </div>
-    <p class="copy">ST's own Class B safety example for the NUCLEO-G474RE (X-CUBE-CLASSB-G4 v4.0.1), built unmodified. All nine errors it reports were judged true by hand: five read back on the board, two read from the source, two true to the letter with no effect seen. One of the three warnings is false.</p>
+    <p class="copy">ST's own Class B safety example for the NUCLEO-G474RE (X-CUBE-CLASSB-G4 v4.0.1), built unmodified. The code passes safety self-tests, but leaves the system in a state that may fail at higher temperatures.</p>
   </div>
   <div>
     <div class="term">
@@ -165,7 +165,7 @@ td:first-child{font-family:var(--font-mono);font-size:.85rem;white-space:nowrap}
 <span class="cov">coverage: 128 of 147 functions reached; 10 of 10 peripherals touched have a protocol; 68 of 68 MMIO write sites sequence-checked, 29 store(s) through an address the walk could not resolve</span>
 <span class="sev-err">9 error(s)</span>, 3 warning(s)</pre>
     </div>
-    <div class="board" style="margin-top:10px"><b>On the board:</b> the CPU reads <code>R1MODE</code> = 1 (boost off) and <code>PWREN</code> = 0 with the PLL at 170 MHz. main.c asks for <code>SCALE1</code> where it needs <code>SCALE1_BOOST</code>, after the clock switch and with the PWR clock off, so the call does nothing. The CPU, flash CRC, RAM and clock self-tests all pass anyway. With the fix the error goes and the board reads <code>R1MODE</code> = 0. No failure seen at room temperature; not reported to ST yet.</div>
+    <div class="board" style="margin-top:10px"><b>On the board:</b> the CPU reads <code>R1MODE</code> = 1 (boost off) and <code>PWREN</code> = 0 with the PLL at 170 MHz. main.c asks for <code>SCALE1</code> where it needs <code>SCALE1_BOOST</code>, after the clock switch and with the PWR clock off, so the call does nothing. The CPU, flash CRC, RAM and clock self-tests all pass anyway. With the fix the error goes and the board reads <code>R1MODE</code> = 0. Works at room temperature, but out of spec.</div>
   </div>
 </div>
 
