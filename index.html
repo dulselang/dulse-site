@@ -286,8 +286,8 @@ task fn control() every 1ms deadline 100us on TIM6 {
     <h2>Timing side channels today. Faults next, fault record first.</h2>
     <div class="two">
       <div class="copy">
-        <p>The memory system is a function of the address sequence and the configuration, and no language's semantics mentions either. So a program that is correct by every definition the compiler has still leaks a key, and the countermeasure people reach for when they can't go branchless, two balanced arms, fails from placement alone.</p>
-        <p>ST's X-CUBE-CRYPTOLIB gives up a full AES-128 key at the product default. The RAM section that fixes it ships in the same package, and none of its 2,277 linker scripts maps it. 8-byte alignment closes the channel and is 20-25 % faster. That is a placement property, and only something that owns the emitter and the layout can promise it.</p>
+        <p>The memory system is a function of the address sequence and the configuration, and no language's semantics mentions either. So a program that is correct by every definition the compiler has still leaks a key, and this might change based on optimization level or device clock setting.</p>
+        <p>Embedded AES implementations leak if tables are placed on Flash, a common default in resource-constrained devices. The leak and fix is written in academic papers or subtle documentation notes. The compiler doesn't know this as has no device model.</p>
         <p>Dulse owns both. E0907 refuses the configuration moving while the secret is live, and E0908 refuses a secret computed in a memory configuration no bench capture covers (the F429 and F401 have captures so far). No branch, address or information flow is involved; a source-level tool can't say it, because the configuration is a register write it never sees.</p>
       </div>
       <div style="display:grid;gap:12px">
