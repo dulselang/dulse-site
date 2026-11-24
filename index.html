@@ -137,7 +137,7 @@ td:first-child{font-family:var(--font-mono);font-size:.85rem;white-space:nowrap}
 <header class="top">
   <a class="brand" href="#">dulse</a>
   <nav class="nav">
-    <a href="#check">Check</a><a href="#time">Time</a><a href="#arms">Arms</a><a href="#misses">What it misses</a>
+    <a href="#check">Check</a><a href="#time">Time</a><a href="#arms">Arms</a>
     <a href="#sidechannel">Side channels</a><a href="https://dyno.dulse.dev">Agent benchmark</a><a href="#signup">Get the email</a>
   </nav>
 </header>
@@ -243,7 +243,7 @@ task fn control() every 1ms deadline 100us on TIM6 {
         <h3>Check</h3>
         <p class="claim">Any Cortex-M ELF, any toolchain. Reads and reports, alters nothing.</p>
         <p class="res"><span class="lab">found</span>The Class B example above. A typo in ST's CubeL5 <code>TIM_OutputCompare</code> example that reads the unclocked TIM2, so TIM3's compare is 0 instead of 499. Microchip's HAL read-modify-writing the write-only <code>SUPC_CR</code>, core-off bit included (latent: it reads 0 on both dies tried). The SAMD21 <code>XOSC32K.AAMPEN</code> erratum in a Zephyr SoC file that builds into nine boards, seven of them SAMD21. Four in ChibiOS master's HALs, e.g., the G4 'boost' option writes the bit that turns boost off, so the part runs 170 MHz in the 150 MHz mode (read back on a NUCLEO-G474RE). None filed upstream yet.</p>
-        <p class="gap"><span class="lab">gap</span>Precision on vendor code is 0.06 to 0.16 per site held out; recall on historical bugs 1 to 3 in 46. See 'what it misses'.</p>
+        <p class="gap"><span class="lab">gap</span>Precision on vendor code is 0.06 to 0.16 per site held out; recall on historical bugs 1 to 3 in 46.</p>
       </div>
       <div class="tile">
         <h3>Contracts</h3>
@@ -276,22 +276,6 @@ task fn control() every 1ms deadline 100us on TIM6 {
         <p class="gap"><span class="lab">gap</span>2 to 3x the cost per session in the early rounds (cheaper in the two newest servo ones), and a frontier model didn't need it. Cells of one to five runs on the bench the model was calibrated on. The runs, and the newer rounds, are at <a href="https://dyno.dulse.dev">dyno.dulse.dev</a>.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- 5. what it misses -->
-<section id="misses">
-  <div class="stack">
-    <p class="eyebrow">What it doesn't find</p>
-    <h2>The catch, written down.</h2>
-    <ul class="fine">
-      <li>Precision on vendor code: 0.020 then 0.062 per site on the first held-out corpus, 0.156 on a fresh one where the second fix wave didn't help. What it finds is real; most of what it reports on a big vendor image isn't, yet.</li>
-      <li>Recall: 2 of 34 historical defects, then 3 of 46, one strict. 11 of the 34 misses weren't register-rule bugs at all.</li>
-      <li>Walking a vendor SDK is slow. A Dulse example checks in 0.44 s at the median; the 164 pico-sdk examples took 200 s at the median and half an hour at the worst. What costs is what C is allowed to do (handlers installed at run time, ROM calls, jump tables in <code>.data</code>), not the size of the image.</li>
-      <li>The agent numbers are small and in-sample, and Dulse cost 2-3x per session in the early rounds.</li>
-      <li>A clean result is partly 'not looked at'. The coverage line is on every run for that reason.</li>
-      <li>Every hole closed in the agent rounds was followed by one a level up (the hollow save, a mode of the program's own, a shadow name). The checker proves what's left is safe, not that the feature is there.</li>
-    </ul>
   </div>
 </section>
 
